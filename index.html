@@ -330,6 +330,39 @@
             stroke-linejoin: round;
         }
 
+        /* Weekly Progress Tracker */
+        .weekly-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+            margin-bottom: 14px;
+        }
+
+        .week-day {
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px 4px;
+            text-align: center;
+        }
+
+        .week-day-name {
+            font-size: 9px;
+            color: var(--text-sub);
+            font-weight: 700;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .week-day-status {
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .status-done { color: var(--accent-green); }
+        .status-missed { color: var(--text-sub); opacity: 0.4; }
+
         /* Rewards Grid */
         .rewards-grid {
             display: grid;
@@ -691,6 +724,18 @@
             </button>
         </div>
 
+        <!-- Weekly Progress Overview -->
+        <div class="card">
+            <div class="card-title">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Weekly Consistency Overview
+            </div>
+            <div class="card-desc">Track your study habit progress across the current week.</div>
+            <div class="weekly-grid" id="weekly-overview-grid">
+                <!-- Dynamically populated via script -->
+            </div>
+        </div>
+
         <!-- Redeem Rewards -->
         <div class="card">
             <div class="card-title">
@@ -807,7 +852,8 @@
             proofs: 0,
             bank: 90,
             pending: 0,
-            items: []
+            items: [],
+            weekHistory: [false, false, false, false, false, false, false]
         };
 
         // Real-time synchronization: listen for database changes instantly across all devices
@@ -816,6 +862,7 @@
             if (serverData) {
                 data = serverData;
                 if(!data.items) data.items = [];
+                if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
             }
             updateUI();
         });
@@ -892,6 +939,12 @@
                 data.streak++;
                 data.proofs++;
                 data.bank += 45;
+                
+                // Mark today (or latest open slot) as checked in week history
+                const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+                if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
+                data.weekHistory[dayIndex] = true;
+
                 saveDataToCloud();
             }
         }
@@ -910,6 +963,11 @@
             data.streak++;
             data.proofs++;
             data.bank += 45;
+            
+            const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+            if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
+            data.weekHistory[dayIndex] = true;
+
             saveDataToCloud();
             alert("Updated! Streak is now " + data.streak + " Days, +45 Mins added to Reward Bank.");
         }
@@ -929,6 +987,22 @@
             document.getElementById('stat-proofs').innerText = data.proofs || 0;
             document.getElementById('stat-bank').innerText = data.bank || 0;
             document.getElementById('stat-pending').innerText = data.pending || 0;
+
+            // Render Weekly Grid
+            const daysNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const weekContainer = document.getElementById('weekly-overview-grid');
+            if(weekContainer) {
+                const history = data.weekHistory || [false, false, false, false, false, false, false];
+                weekContainer.innerHTML = daysNames.map((day, idx) => {
+                    const isDone = history[idx];
+                    return `
+                        <div class="week-day">
+                            <div class="week-day-name">${day}</div>
+                            <div class="week-day-status ${isDone ? 'status-done' : 'status-missed'}">${isDone ? '✓' : '•'}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
 
             // Render Recent Submissions Log
             const subList = document.getElementById('submissions-list');
