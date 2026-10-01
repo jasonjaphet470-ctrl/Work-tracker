@@ -831,9 +831,9 @@ try {
     const reply = data.candidates[0].content.parts[0].text;
 
     // Replace loading text with AI answer
-    document.getElementById(loadingId).outerHTML = `<p><strong>AI Tutor:</strong> ${reply}</p>`;
+    document.getElementById(AIId).outerHTML = `<p><strong>AI Tutor:</strong> ${reply}</p>`;
   } catch (error) {
-    document.getElementById(loadingId).outerHTML = `<p style="color: #ef4444;"><strong>Error:</strong> Could not reach AI. Check your API key.</p>`;
+    document.getElementById(AIId).outerHTML = `<p style="color: #ef4444;"><strong>Error:</strong> Could not reach AI. Check your API key.</p>`;
   }
   
   chatHistory.scrollTop = chatHistory.scrollHeight;
