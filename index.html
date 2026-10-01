@@ -445,6 +445,20 @@
             font-size: 12px;
             cursor: pointer;
         }
+        .btn-reject {
+  background-color: #e74c3c;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-reject:hover {
+  background-color: #c0392b;
+}
+
     </style>
 </head>
 <body>
@@ -740,6 +754,14 @@
                 updateUI();
             }
         }
+        function rejectSubmission(id) {
+  const item = submissions.find(s => s.id === id);
+  if (item) {
+    item.status = 'rejected';
+    updateDashboard(); // Refreshes UI to show updated status
+  }
+}
+
 
         function quickTickYes() {
             data.streak++;
@@ -792,6 +814,11 @@
                         </div>
                         <div class="sub-notes" style="margin-bottom: 10px;">${item.notes}</div>
                         <button class="btn-primary" style="background-color: var(--accent-green);" onclick="approveSubmission(${item.id})">✓ Approve & Grant +45 Mins</button>
+                        <div class="review-actions">
+  <button class="btn-approve" onclick="approveSubmission(submission.id)">Approve</button>
+  <button class="btn-reject" onclick="rejectSubmission(submission.id)">Reject</button>
+</div>
+
                     </div>
                 `).join('');
             }
