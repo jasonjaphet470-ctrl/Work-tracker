@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAEC Streak Tracker</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #151c2c;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f97316;
+            --accent-green: #10b981;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+            --border-color: #1f293d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #f97316, #ef4444);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .logo-title {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .badges {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .badge {
+            background-color: #f59e0b22;
+            color: #fbbf24;
+            border: 1px solid #f59e0b44;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* Mode Switcher */
+        .mode-switch {
+            display: flex;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-sub);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .mode-btn.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stat-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-orange { background-color: #f9731622; color: #f97316; }
+        .stat-green { background-color: #10b98122; color: #10b981; }
+        .stat-purple { background-color: #8b5cf622; color: #a78bfa; }
+        .stat-red { background-color: #ef444422; color: #f87171; }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-sub);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .stat-unit {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        /* Forms & Cards */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 14px;
+        }
+
+        .reward-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #10b98122;
+            color: #34d399;
+            border: 1px solid #10b98144;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            display: block;
+            text-transform: uppercase;
+        }
+
+        select, textarea, input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #0b0f19;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+        }
+
+        select:focus, textarea:focus, input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        textarea {
+            resize: vertical;
+            height: 90px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Reward Grid */
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .reward-card {
+            background-color: #0b0f19;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .reward-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .reward-name {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .reward-time {
+            font-size: 10px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+        }
+
+        .btn-small {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Weekly Goals */
+        .weekly-days {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .day-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .day-name {
+            font-size: 10px;
+            color: var(--text-sub);
+            font-weight: 700;
+        }
+
+        .day-status {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #0b0f19;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-sub);
+        }
+
+        .day-status.done {
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+        }
+
+        /* Log List */
+        .submission-item {
+            background-color: #0b0f19;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .sub-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .sub-subject {
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .sub-tag {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .tag-approved { background-color: #10b98122; color: #34d399; }
+        .tag-pending { background-color: #f59e0b22; color: #fbbf24; }
+
+        .sub-notes {
+            font-size: 11px;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
+
+        /* Modal / PIN */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .modal-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-bottom: 16px;
+        }
+
+        .modal-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .btn-sec {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Parent Portal Specifics */
+        .quick-tick-box {
+            background: linear-gradient(135deg, #064e3b, #047857);
+            border-radius: 12px;
+            padding: 14px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .btn-quick-tick {
+            background-color: white;
+            color: #047857;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">🔥</div>
+            <div>
+                <div class="logo-title">WAEC STREAK TRACKER</div>
+                <div class="logo-subtitle">Proof-Based Study System for Mom & Student</div>
+            </div>
+        </div>
+        <div class="badges">
+            <span class="badge">BECE</span>
+            <span class="badge">PREP</span>
+        </div>
+    </header>
+
+    <!-- Mode Switcher -->
+    <div class="mode-switch">
+        <button class="mode-btn active" id="btn-student-mode" onclick="switchMode('student')">
+            <span>👤</span> Student Mode
+        </button>
+        <button class="mode-btn" id="btn-mom-mode" onclick="openMomAuth()">
+            <span>🔒</span> Mom's Review Portal
+        </button>
+    </div>
+
+    <!-- Stats Dashboard -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-orange">🔥</div>
+            <div>
+                <div class="stat-label">Current Streak</div>
+                <div><span class="stat-value" id="stat-streak">3</span> <span class="stat-unit">Days</span></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-green">✓</div>
+            <div>
+                <div class="stat-label">Verified Proofs</div>
+                <div><span class="stat-value" id="stat-proofs">3</span></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-purple">⏰</div>
+            <div>
+                <div class="stat-label">Reward Bank</div>
+                <div><span class="stat-value" id="stat-bank">90</span> <span class="stat-unit">Mins</span></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-red">⏳</div>
+            <div>
+                <div class="stat-label">Pending Review</div>
+                <div><span class="stat-value" id="stat-pending">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT VIEW -->
+    <div id="student-view">
+        <!-- Log Study Target -->
+        <div class="card">
+            <div class="card-title">📝 Log Today's Study Target</div>
+            <div class="card-desc">Submit your completed work notes to unlock your 45-minute daily reward break!</div>
+            
+            <div class="reward-pill">🎁 Reward: +45 Mins & +1 Streak Day</div>
+
+            <div class="form-group">
+                <label class="form-label">1. Select Subject *</label>
+                <select id="sub-subject">
+                    <option>Mathematics</option>
+                    <option>English Language</option>
+                    <option>Basic Science</option>
+                    <option>Social Studies</option>
+                    <option>Business Studies</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">2. Select Proof Completed *</label>
+                <select id="sub-proof-type">
+                    <option>Write 3-5 Key Bullet Points</option>
+                    <option>Solve Practice Exercises/Worksheet</option>
+                    <option>Summarize Chapter Notes</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">3. What Did You Learn? (Write your 3-5 key points or notes here) *</label>
+                <textarea id="sub-notes" placeholder="E.g., Read Basic Science topic on Energy. Key points: 1) Energy is the capacity to do work. 2) Kinetic energy is energy in motion..."></textarea>
+            </div>
+
+            <button class="btn-primary" onclick="submitStudyProof()">✈️ Submit Proof for Mom's Review</button>
+        </div>
+
+        <!-- Redeem Rewards -->
+        <div class="card">
+            <div class="card-title">🎁 Redeem Earned Reward Time</div>
+            <div class="card-desc">Pick a reward break to spend your earned minutes!</div>
+
+            <div class="rewards-grid">
+                <div class="reward-card">
+                    <div class="reward-icon">🎨</div>
+                    <div class="reward-name">Art & Sketching</div>
+                    <div class="reward-time">45 Minutes Break</div>
+                    <button class="btn-small" onclick="redeemTime(45, 'Art & Sketching')">Start (45 Mins)</button>
+                </div>
+                <div class="reward-card">
+                    <div class="reward-icon">🎮</div>
+                    <div class="reward-name">Phone & Gaming</div>
+                    <div class="reward-time">45 Minutes Break</div>
+                    <button class="btn-small" onclick="redeemTime(45, 'Phone & Gaming')">Start (45 Mins)</button>
+                </div>
+                <div class="reward-card">
+                    <div class="reward-icon">🎧</div>
+                    <div class="reward-name">Music & Chill</div>
+                    <div class="reward-time">30 Minutes Break</div>
+                    <button class="btn-small" onclick="redeemTime(30, 'Music & Chill')">Start (30 Mins)</button>
+                </div>
+                <div class="reward-card">
+                    <div class="reward-icon">🍪</div>
+                    <div class="reward-name">Special Snack Break</div>
+                    <div class="reward-time">15 Minutes Break</div>
+                    <button class="btn-small" onclick="redeemTime(15, 'Special Snack Break')">Start (15 Mins)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Tracker -->
+        <div class="card">
+            <div class="card-title">📅 Weekly Study Goal (Mon - Sun)</div>
+            <div class="weekly-days">
+                <div class="day-col"><span class="day-name">MON</span><div class="day-status done">✓</div></div>
+                <div class="day-col"><span class="day-name">TUE</span><div class="day-status done">✓</div></div>
+                <div class="day-col"><span class="day-name">WED</span><div class="day-status done">✓</div></div>
+                <div class="day-col"><span class="day-name">THU</span><div class="day-status">•</div></div>
+                <div class="day-col"><span class="day-name">FRI</span><div class="day-status">•</div></div>
+                <div class="day-col"><span class="day-name">SAT</span><div class="day-status">•</div></div>
+                <div class="day-col"><span class="day-name">SUN</span><div class="day-status">•</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOM'S PORTAL VIEW -->
+    <div id="mom-view" style="display: none;">
+        <div class="card" style="border-color: var(--accent-green);">
+            <div class="card-title" style="color: #34d399;">🛡️ Parent Verification Dashboard</div>
+            <div class="card-desc">Inspect your child's written bullet points or rough note sheet, then tap approve to update their streak and credit reward minutes!</div>
+
+            <div class="quick-tick-box">
+                <div>
+                    <div style="font-size: 12px; font-weight: 800;">Quick Tick "Yes" For Today</div>
+                    <div style="font-size: 10px; opacity: 0.8;">Instantly add +1 Day Streak & +45 Mins</div>
+                </div>
+                <button class="btn-quick-tick" onclick="quickTickYes()">+1 Streak</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">⌛ Awaiting Mom's Verification</div>
+            <div id="pending-list">
+                <p style="font-size: 12px; color: var(--text-sub); text-align: center; padding: 10px;">No pending tasks waiting for review. Excellent job!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Submissions Log (Shared) -->
+    <div class="card">
+        <div class="card-title">📜 My Recent Study Submissions</div>
+        <div id="submissions-list">
+            <div class="submission-item">
+                <div class="sub-header">
+                    <span class="sub-subject">Basic Science - Write 3-5 Key Bullet Points</span>
+                    <span class="sub-tag tag-approved">✓ Verified (+45 Mins)</span>
+                </div>
+                <div class="sub-notes">Living Things topic: 1) Living things carry out respiration. 2) Plants undergo photosynthesis using sunlight. 3) Excretion removes toxic wastes.</div>
+            </div>
+            <div class="submission-item">
+                <div class="sub-header">
+                    <span class="sub-subject">Mathematics - Solve Practice Exercises</span>
+                    <span class="sub-tag tag-approved">✓ Verified (+45 Mins)</span>
+                </div>
+                <div class="sub-notes">Solved 10 Simple Equations exercises on paper. Checked answers for X.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIN Modal -->
+    <div class="modal" id="pin-modal">
+        <div class="modal-content">
+            <div class="modal-title">Mom's Verification Code</div>
+            <div class="modal-desc">Enter PIN to access Mom's Portal (Default PIN: 1234)</div>
+            <input type="password" id="pin-input" placeholder="••••" maxlength="4" style="text-align: center; font-size: 20px; letter-spacing: 6px;">
+            <div class="modal-btns">
+                <button class="btn-sec" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" style="flex: 1;" onclick="verifyPin()">Enter Portal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let data = {
+            streak: 3,
+            proofs: 3,
+            bank: 90,
+            pending: 0,
+            items: [
+                { id: 1, subject: "Basic Science", proof: "Write 3-5 Key Bullet Points", notes: "Living Things topic: 1) Living things carry out respiration. 2) Plants undergo photosynthesis using sunlight. 3) Excretion removes toxic wastes.", status: "approved" },
+                { id: 2, subject: "Mathematics", proof: "Solve Practice Exercises", notes: "Solved 10 Simple Equations exercises on paper. Checked answers for X.", status: "approved" }
+            ]
+        };
+
+        function switchMode(mode) {
+            if(mode === 'student') {
+                document.getElementById('student-view').style.display = 'block';
+                document.getElementById('mom-view').style.display = 'none';
+                document.getElementById('btn-student-mode').classList.add('active');
+                document.getElementById('btn-mom-mode').classList.remove('active');
+            } else {
+                document.getElementById('student-view').style.display = 'none';
+                document.getElementById('mom-view').style.display = 'block';
+                document.getElementById('btn-student-mode').classList.remove('active');
+                document.getElementById('btn-mom-mode').classList.add('active');
+            }
+        }
+
+        function openMomAuth() {
+            document.getElementById('pin-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('pin-modal').style.display = 'none';
+        }
+
+        function verifyPin() {
+            const pin = document.getElementById('pin-input').value;
+            if(pin === '1234') {
+                closeModal();
+                document.getElementById('pin-input').value = '';
+                switchMode('mom');
+            } else {
+                alert('Incorrect PIN! Try 1234');
+            }
+        }
+
+        function submitStudyProof() {
+            const subject = document.getElementById('sub-subject').value;
+            const proof = document.getElementById('sub-proof-type').value;
+            const notes = document.getElementById('sub-notes').value;
+
+            if(!notes.trim()) {
+                alert('Please enter what you learned in step 3!');
+                return;
+            }
+
+            data.pending++;
+            data.items.unshift({
+                id: Date.now(),
+                subject: subject,
+                proof: proof,
+                notes: notes,
+                status: 'pending'
+            });
+
+            document.getElementById('sub-notes').value = '';
+            updateUI();
+            alert("Proof submitted! Ask Mom to open Mom's Review Portal to approve.");
+        }
+
+        function approveSubmission(id) {
+            const item = data.items.find(i => i.id === id);
+            if(item && item.status === 'pending') {
+                item.status = 'approved';
+                data.pending--;
+                data.streak++;
+                data.proofs++;
+                data.bank += 45;
+                updateUI();
+            }
+        }
+
+        function quickTickYes() {
+            data.streak++;
+            data.proofs++;
+            data.bank += 45;
+            updateUI();
+            alert("Updated! Streak is now " + data.streak + " Days, +45 Mins added to Reward Bank.");
+        }
+
+        function redeemTime(mins, title) {
+            if(data.bank < mins) {
+                alert("Not enough reward minutes in your bank!");
+                return;
+            }
+            data.bank -= mins;
+            updateUI();
+            alert(`Enjoy your ${mins} mins of ${title}! Timer started.`);
+        }
+
+        function updateUI() {
+            document.getElementById('stat-streak').innerText = data.streak;
+            document.getElementById('stat-proofs').innerText = data.proofs;
+            document.getElementById('stat-bank').innerText = data.bank;
+            document.getElementById('stat-pending').innerText = data.pending;
+
+            // Render Recent Submissions
+            const subList = document.getElementById('submissions-list');
+            subList.innerHTML = data.items.map(item => `
+                <div class="submission-item">
+                    <div class="sub-header">
+                        <span class="sub-subject">${item.subject} - ${item.proof}</span>
+                        <span class="sub-tag ${item.status === 'approved' ? 'tag-approved' : 'tag-pending'}">
+                            ${item.status === 'approved' ? '✓ Verified (+45 Mins)' : '⌛ Awaiting Approval'}
+                        </span>
+                    </div>
+                    <div class="sub-notes">${item.notes}</div>
+                </div>
+            `).join('');
+
+            // Render Pending for Mom
+            const pendingList = document.getElementById('pending-list');
+            const pendingItems = data.items.filter(i => i.status === 'pending');
+            if(pendingItems.length === 0) {
+                pendingList.innerHTML = `<p style="font-size: 12px; color: var(--text-sub); text-align: center; padding: 10px;">No pending tasks waiting for review. Excellent job!</p>`;
+            } else {
+                pendingList.innerHTML = pendingItems.map(item => `
+                    <div class="submission-item" style="border-color: #f59e0b;">
+                        <div class="sub-header">
+                            <span class="sub-subject">${item.subject} (${item.proof})</span>
+                        </div>
+                        <div class="sub-notes" style="margin-bottom: 10px;">${item.notes}</div>
+                        <button class="btn-primary" style="background-color: var(--accent-green);" onclick="approveSubmission(${item.id})">✓ Approve & Grant +45 Mins</button>
+                    </div>
+                `).join('');
+            }
+        }
+    </script>
+</body>
+</html>
