@@ -330,6 +330,25 @@
             stroke-linejoin: round;
         }
 
+        .btn-reset {
+            width: 100%;
+            padding: 12px;
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset:hover {
+            background-color: var(--accent-red);
+            color: #ffffff;
+        }
+
         /* Weekly Progress Tracker */
         .weekly-grid {
             display: grid;
@@ -615,10 +634,9 @@
     <header>
         <div class="logo-container">
             <div class="logo-icon">
-               <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M..."></path></svg>
-
-</div>
- 
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                </svg>
             </div>
             <div>
                 <div class="logo-title">WAEC STREAK TRACKER</div>
@@ -669,7 +687,7 @@
             </div>
             <div>
                 <div class="stat-label">Reward Bank</div>
-                <div><span class="stat-value" id="stat-bank">90</span> <span class="stat-unit">Mins</span></div>
+                <div><span class="stat-value" id="stat-bank">0</span> <span class="stat-unit">Mins</span></div>
             </div>
         </div>
         <div class="stat-card">
@@ -859,6 +877,9 @@
                 </div>
                 <button class="btn-quick-tick" onclick="quickTickYes()">+1 Streak</button>
             </div>
+
+            <!-- RESET ALL DATA BUTTON -->
+            <button class="btn-reset" onclick="resetAllDataToZero()">⚠️ Reset All Streak & Bank Data to 0</button>
         </div>
 
         <div class="card">
@@ -901,25 +922,41 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Default initialized state: Streak, proofs, bank, and history are all 0 / empty
         let data = {
-            streak: 0, proofs: 0, bank: 90, pending: 0, items: [],
+            streak: 0,
+            proofs: 0,
+            bank: 0,
+            pending: 0,
+            items: [],
             weekHistory: [false, false, false, false, false, false, false],
-            activeTimer: null
+            activeTimer: null,
+            lastStreakDate: null
         };
 
         db.ref('trackerData').on('value', (snapshot) => {
             const serverData = snapshot.val();
             if (serverData) {
                 data = serverData;
+                if(data.streak === undefined) data.streak = 0;
+                if(data.proofs === undefined) data.proofs = 0;
+                if(data.bank === undefined) data.bank = 0;
+                if(data.pending === undefined) data.pending = 0;
                 if(!data.items) data.items = [];
                 if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
+                if(!data.lastStreakDate) data.lastStreakDate = null;
             }
             updateUI();
-            updateTimerUI(); // Instantly check timer when data loads
+            updateTimerUI();
         });
 
         function saveDataToCloud() {
             db.ref('trackerData').set(data);
+        }
+
+        // Helper to get today's date in YYYY-MM-DD format
+        function getTodayDateString() {
+            return new Date().toISOString().split('T')[0];
         }
 
         function switchMode(mode) {
@@ -966,7 +1003,7 @@
                 return;
             }
 
-            data.pending++;
+            data.pending = (data.pending || 0) + 1;
             if(!data.items) data.items = [];
             data.items.unshift({
                 id: Date.now(), subject: subject, proof: proof, notes: notes, status: 'pending'
@@ -982,8 +1019,18 @@
             const item = data.items.find(i => i.id === id);
             if(item && item.status === 'pending') {
                 item.status = 'approved';
-                data.pending = Math.max(0, data.pending - 1);
-                data.streak++; data.proofs++; data.bank += 45;
+                data.pending = Math.max(0, (data.pending || 1) - 1);
+                data.proofs = (data.proofs || 0) + 1;
+                data.bank = (data.bank || 0) + 45;
+
+                const today = getTodayDateString();
+                if (data.lastStreakDate === today) {
+                    alert("Approved! +45 Mins added to Reward Bank. (Streak was already updated for today).");
+                } else {
+                    data.streak = (data.streak || 0) + 1;
+                    data.lastStreakDate = today;
+                    alert("Approved! +1 Streak Day & +45 Mins added to Reward Bank.");
+                }
                 
                 const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
                 if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
@@ -998,13 +1045,24 @@
             const item = data.items.find(i => i.id === id);
             if(item && item.status === 'pending') {
                 item.status = 'rejected';
-                data.pending = Math.max(0, data.pending - 1);
+                data.pending = Math.max(0, (data.pending || 1) - 1);
                 saveDataToCloud();
             }
         }
 
         function quickTickYes() {
-            data.streak++; data.proofs++; data.bank += 45;
+            const today = getTodayDateString();
+
+            // Same-day check to block duplicate streak increments
+            if (data.lastStreakDate === today) {
+                alert("You have already updated the streak for today! Come back tomorrow to increase your streak.");
+                return;
+            }
+
+            data.streak = (data.streak || 0) + 1;
+            data.proofs = (data.proofs || 0) + 1;
+            data.bank = (data.bank || 0) + 45;
+            data.lastStreakDate = today;
             
             const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
             if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
@@ -1014,9 +1072,28 @@
             alert("Updated! Streak is now " + data.streak + " Days, +45 Mins added to Reward Bank.");
         }
 
-        // TIMER LOGIC ADDED HERE
+        // RESET ALL DATA TO ZERO
+        function resetAllDataToZero() {
+            const confirmReset = confirm("Are you sure you want to reset all streaks, bank minutes, verified proofs, and submission logs to 0?");
+            if (confirmReset) {
+                data = {
+                    streak: 0,
+                    proofs: 0,
+                    bank: 0,
+                    pending: 0,
+                    items: [],
+                    weekHistory: [false, false, false, false, false, false, false],
+                    activeTimer: null,
+                    lastStreakDate: null
+                };
+                saveDataToCloud();
+                alert("All stats, streak, bank, and submission logs have been reset to 0.");
+            }
+        }
+
+        // TIMER LOGIC
         function redeemTime(mins, title) {
-            if(data.bank < mins) {
+            if((data.bank || 0) < mins) {
                 alert("Not enough reward minutes in your bank!");
                 return;
             }
@@ -1026,7 +1103,6 @@
             }
             
             data.bank -= mins;
-            // Set the end time in milliseconds from now
             data.activeTimer = {
                 endTime: Date.now() + (mins * 60 * 1000),
                 title: title
@@ -1041,7 +1117,6 @@
             saveDataToCloud();
         }
 
-        // Run this every second to update the clocks
         setInterval(updateTimerUI, 1000);
 
         function updateTimerUI() {
@@ -1159,10 +1234,6 @@
             chatHistory.appendChild(loadingMsg);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // =========================================================
-            // ACTION REQUIRED: REPLACE WITH YOUR REAL GEMINI API KEY!
-            // GET ONE AT: aistudio.google.com
-            // =========================================================
             const API_KEY = "PUT_YOUR_API_KEY_HERE"; 
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
