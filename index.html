@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -592,6 +592,7 @@
             padding: 8px 12px;
             border-radius: 8px;
             max-width: 90%;
+            white-space: pre-wrap;
         }
 
         .chat-msg.user {
@@ -701,6 +702,17 @@
                     <option>Basic Science</option>
                     <option>Social Studies</option>
                     <option>Business Studies</option>
+                    <option>CCA</option>
+                    <option>Agric</option>
+                    <option>ICT</option>
+                    <option>CRS</option>
+                    <option>Basic Technology</option>
+                    <option>Continuous Writing</option>
+                    <option>Literature</option>
+                    <option>Civic Education</option>
+                    <option>Security</option>
+                    <option>History</option>
+                    <option>Yoruba</option>
                 </select>
             </div>
 
@@ -736,7 +748,7 @@
             </div>
         </div>
 
-        <!-- Redeem Rewards (Fixed Icons) -->
+        <!-- Redeem Rewards -->
         <div class="card">
             <div class="card-title">
                 <svg viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
@@ -787,10 +799,10 @@
                 AI WAEC Study Tutor
             </div>
             <div id="chat-history">
-                <div class="chat-msg ai">Ask me anything about your BECE or WAEC subjects!</div>
+                <div class="chat-msg ai">Ask me anything about your subjects!</div>
             </div>
             <div style="display: flex; gap: 8px;">
-                <input type="text" id="ai-input" placeholder="Ask a question (e.g., Explain Photosynthesis)...">
+                <input type="text" id="ai-input" placeholder="Ask a question...">
                 <button class="btn-primary" onclick="askAI()" style="width: auto; padding: 10px 18px;">Ask</button>
             </div>
         </div>
@@ -825,7 +837,7 @@
         </div>
     </div>
 
-    <!-- Recent Submissions Log (Shared) -->
+    <!-- Recent Submissions Log -->
     <div class="card">
         <div class="card-title">
             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -848,7 +860,6 @@
     </div>
 
     <script>
-        // Initialize Firebase with your Realtime Database URL
         const firebaseConfig = {
             databaseURL: "https://waec-tracker-d0575-default-rtdb.firebaseio.com/"
         };
@@ -856,15 +867,10 @@
         const db = firebase.database();
 
         let data = {
-            streak: 0,
-            proofs: 0,
-            bank: 90,
-            pending: 0,
-            items: [],
+            streak: 0, proofs: 0, bank: 90, pending: 0, items: [],
             weekHistory: [false, false, false, false, false, false, false]
         };
 
-        // Real-time synchronization: listen for database changes instantly across all devices
         db.ref('trackerData').on('value', (snapshot) => {
             const serverData = snapshot.val();
             if (serverData) {
@@ -926,11 +932,7 @@
             data.pending++;
             if(!data.items) data.items = [];
             data.items.unshift({
-                id: Date.now(),
-                subject: subject,
-                proof: proof,
-                notes: notes,
-                status: 'pending'
+                id: Date.now(), subject: subject, proof: proof, notes: notes, status: 'pending'
             });
 
             document.getElementById('sub-notes').value = '';
@@ -944,9 +946,7 @@
             if(item && item.status === 'pending') {
                 item.status = 'approved';
                 data.pending = Math.max(0, data.pending - 1);
-                data.streak++;
-                data.proofs++;
-                data.bank += 45;
+                data.streak++; data.proofs++; data.bank += 45;
                 
                 const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
                 if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
@@ -967,9 +967,7 @@
         }
 
         function quickTickYes() {
-            data.streak++;
-            data.proofs++;
-            data.bank += 45;
+            data.streak++; data.proofs++; data.bank += 45;
             
             const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
             if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
@@ -1018,11 +1016,9 @@
                     let tagClass = 'tag-pending';
                     let tagText = '⌛ Awaiting Approval';
                     if(item.status === 'approved') {
-                        tagClass = 'tag-approved';
-                        tagText = '✓ Verified (+45 Mins)';
+                        tagClass = 'tag-approved'; tagText = '✓ Verified (+45 Mins)';
                     } else if(item.status === 'rejected') {
-                        tagClass = 'tag-rejected';
-                        tagText = '✕ Needs Revision';
+                        tagClass = 'tag-rejected'; tagText = '✕ Needs Revision';
                     }
 
                     return `
@@ -1078,22 +1074,40 @@
             chatHistory.appendChild(loadingMsg);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // Simplified standard offline / intelligent fallback response if API keys are blocked by CORS on GitHub Pages
-            setTimeout(() => {
-                const queryLower = userQuery.toLowerCase();
-                let reply = "That's a great WAEC question! Make sure to review your basic textbook definitions and write down 3 key summary points about it in your notebook.";
-                
-                if(queryLower.includes('photosynthesis')) {
-                    reply = "Photosynthesis is the process by which green plants manufacture their food using sunlight, water, and carbon dioxide in the presence of chlorophyll. Equation: 6CO2 + 6H2O -> C6H12O6 + 6O2.";
-                } else if(queryLower.includes('algebra') || queryLower.includes('math')) {
-                    reply = "For WAEC mathematics algebra, always remember to group like terms first, clear fractions by multiplying through by the LCM, and check your answers by substituting back!";
-                } else if(queryLower.includes('atom')) {
-                    reply = "An atom is the smallest particle of an element that can take part in a chemical reaction. It consists of protons (+) and neutrons (0) in the nucleus, with electrons (-) orbiting around.";
-                }
+            // =========================================================
+            // ACTION REQUIRED: REPLACE WITH YOUR REAL GEMINI API KEY!
+            // GET ONE AT: aistudio.google.com
+            // =========================================================
+            const API_KEY = "PUT_YOUR_API_KEY_HERE"; 
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-                loadingMsg.innerText = reply;
-                chatHistory.scrollTop = chatHistory.scrollHeight;
-            }, 800);
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are an expert tutor helping a secondary school student prepare for WAEC/BECE exams. Keep answers concise, clear, and easy to understand.\n\nStudent Question: ${userQuery}`
+                            }]
+                        }]
+                    })
+                });
+
+                const resData = await response.json();
+                if(resData.candidates && resData.candidates[0]?.content?.parts[0]?.text) {
+                    loadingMsg.innerText = resData.candidates[0].content.parts[0].text;
+                } else if(resData.error) {
+                    loadingMsg.innerHTML = `<span style="color: var(--accent-red);">API Error: ${resData.error.message}</span>`;
+                } else {
+                    loadingMsg.innerText = "Sorry, I couldn't process that question right now.";
+                }
+            } catch (error) {
+                loadingMsg.innerHTML = `<span style="color: var(--accent-red);">Network Error. Check your connection.</span>`;
+            }
+            
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
     </script>
 </body>
