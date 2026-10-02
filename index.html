@@ -1,1199 +1,788 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WAEC Streak Tracker</title>
-    <!-- Firebase App & Realtime Database SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <style>
-        :root {
-            --bg-color: #070a12;
-            --card-bg: #0f172a;
-            --card-border: #1e293b;
-            --accent-blue: #3b82f6;
-            --accent-green: #10b981;
-            --accent-orange: #f97316;
-            --accent-purple: #8b5cf6;
-            --accent-red: #ef4444;
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
-            --input-bg: #020617;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 16px;
-            max-width: 480px;
-            margin: 0 auto;
-            min-height: 100vh;
-        }
-
-        /* Header */
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #f97316, #ea580c);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-        }
-
-        .logo-icon svg {
-            width: 24px;
-            height: 24px;
-            fill: none;
-            stroke: #ffffff;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .logo-title {
-            font-size: 17px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            line-height: 1.2;
-        }
-
-        .logo-subtitle {
-            font-size: 11px;
-            color: var(--text-sub);
-            font-weight: 500;
-        }
-
-        .badges {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .badge {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            font-size: 9px;
-            font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 6px;
-            text-align: center;
-            letter-spacing: 0.5px;
-        }
-
-        /* Mode Switcher */
-        .mode-switch {
-            display: flex;
-            background-color: var(--card-bg);
-            border-radius: 14px;
-            padding: 4px;
-            margin-bottom: 20px;
-            border: 1px solid var(--card-border);
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 10px 12px;
-            border: none;
-            border-radius: 10px;
-            background: transparent;
-            color: var(--text-sub);
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .mode-btn.active {
-            background-color: var(--accent-blue);
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .mode-btn svg {
-            width: 16px;
-            height: 16px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 14px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .stat-icon svg {
-            width: 20px;
-            height: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .stat-orange { background: rgba(249, 115, 22, 0.15); color: #f97316; }
-        .stat-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .stat-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
-        .stat-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-        .stat-label {
-            font-size: 10px;
-            color: var(--text-sub);
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 22px;
-            font-weight: 800;
-            line-height: 1.1;
-        }
-
-        .stat-unit {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-sub);
-        }
-
-        /* Cards & Containers */
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 18px;
-            padding: 18px;
-            margin-bottom: 20px;
-        }
-
-        .card-title {
-            font-size: 15px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-        }
-
-        .card-title svg {
-            width: 18px;
-            height: 18px;
-            fill: none;
-            stroke: var(--accent-blue);
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .card-desc {
-            font-size: 12px;
-            color: var(--text-sub);
-            margin-bottom: 14px;
-            line-height: 1.4;
-        }
-
-        .reward-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            margin-bottom: 16px;
-        }
-
-        .reward-pill svg {
-            width: 14px;
-            height: 14px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-        }
-
-        .form-group {
-            margin-bottom: 14px;
-        }
-
-        .form-label {
-            font-size: 10px;
-            font-weight: 800;
-            color: var(--text-sub);
-            margin-bottom: 6px;
-            display: block;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        select, textarea, input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 10px;
-            color: var(--text-main);
-            font-size: 13px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        select:focus, textarea:focus, input:focus {
-            border-color: var(--accent-blue);
-        }
-
-        textarea {
-            resize: vertical;
-            height: 90px;
-            line-height: 1.4;
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 14px;
-            background-color: var(--accent-blue);
-            color: #ffffff;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-        }
-
-        .btn-primary svg {
-            width: 16px;
-            height: 16px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        /* Weekly Progress Tracker */
-        .weekly-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            margin-top: 10px;
-            margin-bottom: 14px;
-        }
-
-        .week-day {
-            background-color: var(--input-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 8px 4px;
-            text-align: center;
-        }
-
-        .week-day-name {
-            font-size: 9px;
-            color: var(--text-sub);
-            font-weight: 700;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-        }
-
-        .week-day-status {
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .status-done { color: var(--accent-green); }
-        .status-missed { color: var(--text-sub); opacity: 0.4; }
-
-        /* Rewards Grid */
-        .rewards-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .reward-card {
-            background-color: var(--input-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 14px;
-            padding: 14px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .reward-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--accent-blue);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
-
-        .reward-icon svg {
-            width: 20px;
-            height: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .reward-name {
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 2px;
-        }
-
-        .reward-time {
-            font-size: 10px;
-            color: var(--text-sub);
-            margin-bottom: 12px;
-        }
-
-        .btn-small {
-            width: 100%;
-            padding: 8px;
-            background-color: var(--accent-blue);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        /* Submissions List */
-        .submission-item {
-            background-color: var(--input-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 10px;
-        }
-
-        .sub-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .sub-subject {
-            font-weight: 700;
-            font-size: 13px;
-        }
-
-        .sub-tag {
-            font-size: 10px;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .tag-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .tag-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-        .tag-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-        .sub-notes {
-            font-size: 11px;
-            color: var(--text-sub);
-            line-height: 1.4;
-        }
-
-        /* Parent Portal Controls */
-        .quick-tick-box {
-            background: linear-gradient(135deg, #064e3b, #047857);
-            border-radius: 14px;
-            padding: 14px;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-
-        .btn-quick-tick {
-            background-color: #ffffff;
-            color: #047857;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-weight: 800;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .review-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .btn-approve {
-            flex: 1;
-            padding: 8px;
-            background-color: var(--accent-green);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .btn-reject {
-            flex: 1;
-            padding: 8px;
-            background-color: var(--accent-red);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85);
-            backdrop-filter: blur(4px);
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-        }
-
-        .modal-content {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 24px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 320px;
-            text-align: center;
-        }
-
-        .modal-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .modal-desc {
-            font-size: 11px;
-            color: var(--text-sub);
-            margin-bottom: 16px;
-        }
-
-        .modal-btns {
-            display: flex;
-            gap: 10px;
-            margin-top: 14px;
-        }
-
-        .btn-sec {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            border: 1px solid var(--card-border);
-            color: white;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        /* AI Tutor Section */
-        #chat-history {
-            height: 180px;
-            overflow-y: auto;
-            background-color: var(--input-bg);
-            border: 1px solid var(--card-border);
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            font-size: 13px;
-            line-height: 1.5;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .chat-msg {
-            padding: 8px 12px;
-            border-radius: 8px;
-            max-width: 90%;
-            white-space: pre-wrap;
-        }
-
-        .chat-msg.user {
-            background: rgba(59, 130, 246, 0.2);
-            color: var(--text-main);
-            align-self: flex-end;
-        }
-
-        .chat-msg.ai {
-            background: rgba(30, 41, 59, 0.8);
-            color: var(--text-main);
-            align-self: flex-start;
-            border: 1px solid var(--card-border);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WAEC & BECE Prep Hub | Gamified Study Tracker</title>
+  <!-- Google Fonts & FontAwesome Vector Icon Logos -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.5; padding-bottom: 40px; }
+
+    /* Top Navigation Header */
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.25rem; color: var(--primary); }
+    .brand i { font-size: 1.5rem; }
+
+    .header-stats { display: flex; align-items: center; gap: 20px; }
+    .stat-pill {
+      background: #f1f5f9;
+      padding: 8px 16px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .stat-pill.streak { background: #fff7ed; color: #c2410c; }
+    .stat-pill.xp { background: #f0fdf4; color: #15803d; }
+
+    /* XP Level Progress Bar */
+    .xp-bar-container { width: 180px; }
+    .xp-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; }
+    .xp-bar-bg { background: #e2e8f0; height: 8px; border-radius: 999px; overflow: hidden; }
+    .xp-bar-fill { background: linear-gradient(90deg, #10b981, #059669); height: 100%; width: 0%; transition: width 0.4s ease; }
+
+    .role-toggle {
+      background: #e0e7ff;
+      color: var(--primary);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .role-toggle:hover { background: #c7d2fe; }
+
+    /* Layout Containers */
+    .container { max-width: 1300px; margin: 32px auto; padding: 0 24px; }
+    .grid-layout { display: grid; grid-template-columns: 320px 1fr 340px; gap: 24px; }
+
+    @media (max-width: 1024px) {
+      .grid-layout { grid-template-columns: 1fr; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-main);
+    }
+    .card-title i { color: var(--primary); }
+
+    /* Timer Styles */
+    .timer-display {
+      font-size: 3rem;
+      font-weight: 800;
+      text-align: center;
+      margin: 16px 0;
+      font-variant-numeric: tabular-nums;
+      color: var(--primary);
+    }
+    .btn-group { display: flex; gap: 10px; justify-content: center; }
+    .btn {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-secondary { background: #f1f5f9; color: var(--text-main); }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    /* Inputs & Forms */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; color: var(--text-muted); }
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .form-control:focus { border-color: var(--primary); }
+
+    /* Badges Display */
+    .badges-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .badge-item {
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.3s;
+    }
+    .badge-item.unlocked { background: #f0fdf4; border-color: #86efac; }
+    .badge-item.locked { opacity: 0.4; filter: grayscale(1); }
+    .badge-icon { font-size: 1.5rem; margin-bottom: 6px; display: block; color: var(--primary); }
+    .badge-item.unlocked .badge-icon { color: var(--success); }
+    .badge-name { font-size: 0.8rem; font-weight: 700; }
+
+    /* AI Tutor Chat Window */
+    .chat-box { height: 260px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: #f8fafc; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.88rem; }
+    .chat-msg.user { background: var(--primary); color: white; align-self: flex-end; }
+    .chat-msg.ai { background: white; border: 1px solid var(--border-color); align-self: flex-start; }
+
+    /* Weak Spots List */
+    .weak-spot-card {
+      background: #fef2f2;
+      border-left: 4px solid var(--danger);
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: white;
+      width: 90%;
+      max-width: 480px;
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Star Rating System */
+    .star-rating { display: flex; gap: 8px; justify-content: center; margin: 16px 0; direction: rtl; }
+    .star-rating input { display: none; }
+    .star-rating label { font-size: 2rem; color: #cbd5e1; cursor: pointer; transition: color 0.2s; }
+    .star-rating input:checked ~ label,
+    .star-rating label:hover,
+    .star-rating label:hover ~ label { color: var(--accent); }
+
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
 
-    <!-- Header -->
-    <header>
-        <div class="logo-container">
-            <div class="logo-icon">
-               <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M..."></path></svg>
-
-</div>
- 
-            </div>
-            <div>
-                <div class="logo-title">WAEC STREAK TRACKER</div>
-                <div class="logo-subtitle">Proof-Based Study System for Mom & Student</div>
-            </div>
-        </div>
-        <div class="badges">
-            <span class="badge">BECE</span>
-            <span class="badge">PREP</span>
-        </div>
-    </header>
-
-    <!-- Mode Switcher -->
-    <div class="mode-switch">
-        <button class="mode-btn active" id="btn-student-mode" onclick="switchMode('student')">
-            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Student Mode
-        </button>
-        <button class="mode-btn" id="btn-mom-mode" onclick="openMomAuth()">
-            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Mom's Review Portal
-        </button>
+  <!-- App Header -->
+  <header>
+    <div class="brand">
+      <i class="fa-solid fa-graduation-cap"></i>
+      <span>WAEC/BECE Prep Hub</span>
     </div>
 
-    <!-- Stats Dashboard -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon stat-orange">
-                <svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-            </div>
-            <div>
-                <div class="stat-label">Current Streak</div>
-                <div><span class="stat-value" id="stat-streak">0</span> <span class="stat-unit">Days</span></div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon stat-green">
-                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <div>
-                <div class="stat-label">Verified Proofs</div>
-                <div><span class="stat-value" id="stat-proofs">0</span></div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon stat-purple">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div>
-                <div class="stat-label">Reward Bank</div>
-                <div><span class="stat-value" id="stat-bank">90</span> <span class="stat-unit">Mins</span></div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon stat-red">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 10"/></svg>
-            </div>
-            <div>
-                <div class="stat-label">Pending Review</div>
-                <div><span class="stat-value" id="stat-pending">0</span></div>
-            </div>
-        </div>
-    </div>
+    <div class="header-stats">
+      <div class="stat-pill streak">
+        <i class="fa-solid fa-fire"></i>
+        <span id="streakDaysDisplay">0 Day Streak</span>
+      </div>
 
+      <div class="xp-bar-container">
+        <div class="xp-bar-label">
+          <span id="levelName">Lvl 1 Novice</span>
+          <span id="xpDisplay">0 XP</span>
+        </div>
+        <div class="xp-bar-bg">
+          <div class="xp-bar-fill" id="xpProgressBar"></div>
+        </div>
+      </div>
+
+      <button class="role-toggle" id="viewToggleBtn" onclick="toggleView()">
+        <i class="fa-solid fa-user-shield"></i> Switch to Mom's Portal
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="container">
+    
     <!-- STUDENT VIEW -->
-    <div id="student-view">
-        
-        <!-- Active Timer Card (Student Side) -->
-        <div class="card" id="student-timer-card" style="display: none; border-color: var(--accent-orange); background: rgba(249, 115, 22, 0.05);">
-            <div class="card-title" style="color: var(--accent-orange); justify-content: center;">
-                <svg viewBox="0 0 24 24" style="stroke: currentColor;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Break Time Running
-            </div>
-            <div style="font-size: 36px; font-weight: 800; text-align: center; margin: 10px 0; color: var(--accent-orange);" id="student-timer-display">
-                00:00
-            </div>
-            <div style="text-align: center; font-size: 12px; color: var(--text-sub); font-weight: 700; text-transform: uppercase;" id="student-timer-title">
-                Activity Name
-            </div>
-        </div>
-
+    <div id="studentView" class="grid-layout">
+      
+      <!-- Left Column: Timers & Reward Bank -->
+      <div>
+        <!-- Smart Study Pomodoro -->
         <div class="card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Log Today's Study Target
-            </div>
-            <div class="card-desc">Submit your completed work notes to unlock your 45-minute daily reward break!</div>
-            
-            <div class="reward-pill">
-                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                Reward: +45 Mins & +1 Streak Day
-            </div>
+          <div class="card-title">
+            <i class="fa-solid fa-stopwatch"></i>
+            <span>Smart Study Timer</span>
+          </div>
+          <div class="timer-display" id="studyTimerDisplay">25:00</div>
+          
+          <div class="form-group">
+            <label>Current Subject</label>
+            <select id="studySubject" class="form-control">
+              <option value="Mathematics">Mathematics</option>
+              <option value="Integrated Science">Integrated Science</option>
+              <option value="English Language">English Language</option>
+              <option value="Social Studies">Social Studies</option>
+              <option value="ICT">ICT</option>
+            </select>
+          </div>
 
-            <div class="form-group">
-                <label class="form-label">1. Select Subject *</label>
-                <select id="sub-subject">
-                    <option>Mathematics</option>
-                    <option>English Language</option>
-                    <option>Basic Science</option>
-                    <option>Social Studies</option>
-                    <option>Business Studies</option>
-                    <option>CCA</option>
-                    <option>Agric</option>
-                    <option>ICT</option>
-                    <option>CRS</option>
-                    <option>Basic Technology</option>
-                    <option>Continuous Writing</option>
-                    <option>Literature</option>
-                    <option>Civic Education</option>
-                    <option>Security</option>
-                    <option>History</option>
-                    <option>Yoruba</option>
-                </select>
-            </div>
+          <div class="form-group">
+            <label>Perceived Difficulty</label>
+            <select id="topicDifficulty" class="form-control">
+              <option value="Easy">Easy (15% Break Ratio)</option>
+              <option value="Moderate" selected>Moderate (20% Break Ratio)</option>
+              <option value="Hard">Hard (30% Break Ratio)</option>
+            </select>
+          </div>
 
-            <div class="form-group">
-                <label class="form-label">2. Select Proof Completed *</label>
-                <select id="sub-proof-type">
-                    <option>Write 3-5 Key Bullet Points</option>
-                    <option>Solve Practice Exercises/Worksheet</option>
-                    <option>Summarize Chapter Notes</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">3. What Did You Learn? (Write your 3-5 key points or notes here) *</label>
-                <textarea id="sub-notes" placeholder="E.g., Read Basic Science topic on Energy. Key points: 1) Energy is the capacity to do work..."></textarea>
-            </div>
-
-            <button class="btn-primary" onclick="submitStudyProof()">
-                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                Submit Proof for Mom's Review
+          <div class="btn-group">
+            <button class="btn btn-primary" id="startStudyBtn" onclick="toggleStudyTimer()">
+              <i class="fa-solid fa-play"></i> Start Session
             </button>
+            <button class="btn btn-secondary" onclick="resetStudyTimer()">Reset</button>
+          </div>
         </div>
 
-        <!-- Weekly Progress Overview -->
+        <!-- Reward Minute Bank -->
         <div class="card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Weekly Consistency Overview
-            </div>
-            <div class="card-desc">Track your study habit progress across the current week.</div>
-            <div class="weekly-grid" id="weekly-overview-grid">
-                <!-- Dynamically populated via script -->
-            </div>
+          <div class="card-title">
+            <i class="fa-solid fa-gamepad"></i>
+            <span>Reward Minute Bank</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+            Earn minutes through verified study sessions to unlock play time!
+          </p>
+          <div style="font-size: 2rem; font-weight: 800; color: var(--success); text-align: center; margin-bottom: 16px;" id="rewardBankDisplay">
+            0 Mins Available
+          </div>
+          <button class="btn btn-success" onclick="openRedemptionModal()">
+            <i class="fa-solid fa-unlock"></i> Redeem Break Time
+          </button>
         </div>
+      </div>
 
-        <!-- Redeem Rewards -->
+      <!-- Center Column: Proof Submission & Weak Spots -->
+      <div>
+        <!-- Submit Study Proof -->
         <div class="card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
-                Redeem Earned Reward Time
+          <div class="card-title">
+            <i class="fa-solid fa-camera"></i>
+            <span>Submit Study Proof</span>
+          </div>
+          
+          <form id="proofForm" onsubmit="handleProofSubmission(event)">
+            <div class="form-group">
+              <label>Topic Studied</label>
+              <input type="text" id="proofTopic" class="form-control" placeholder="e.g., Quadratic Equations, Photosynthesis" required>
             </div>
-            <div class="card-desc">Pick a reward break to spend your earned minutes!</div>
 
-            <div class="rewards-grid">
-                <div class="reward-card">
-                    <div class="reward-icon">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
-                    </div>
-                    <div class="reward-name">Art & Sketching</div>
-                    <div class="reward-time">45 Minutes Break</div>
-                    <button class="btn-small" onclick="redeemTime(45, 'Art & Sketching')">Start (45 Mins)</button>
-                </div>
-                <div class="reward-card">
-                    <div class="reward-icon">
-                        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                    </div>
-                    <div class="reward-name">Phone & Gaming</div>
-                    <div class="reward-time">45 Minutes Break</div>
-                    <button class="btn-small" onclick="redeemTime(45, 'Phone & Gaming')">Start (45 Mins)</button>
-                </div>
-                <div class="reward-card">
-                    <div class="reward-icon">
-                        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                    </div>
-                    <div class="reward-name">Music & Chill</div>
-                    <div class="reward-time">30 Minutes Break</div>
-                    <button class="btn-small" onclick="redeemTime(30, 'Music & Chill')">Start (30 Mins)</button>
-                </div>
-                <div class="reward-card">
-                    <div class="reward-icon">
-                        <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-                    </div>
-                    <div class="reward-name">Special Snack Break</div>
-                    <div class="reward-time">15 Minutes Break</div>
-                    <button class="btn-small" onclick="redeemTime(15, 'Special Snack Break')">Start (15 Mins)</button>
-                </div>
+            <div class="form-group">
+              <label>Key Takeaways & Summary</label>
+              <textarea id="proofSummary" class="form-control" rows="3" placeholder="Write 2-3 key sentences explaining what you learned..." required></textarea>
             </div>
+
+            <div class="form-group">
+              <label>Upload Work Photo / Notes (Optional Mock)</label>
+              <input type="file" id="proofFile" class="form-control" accept="image/*">
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-paper-plane"></i> Submit Proof for Review
+            </button>
+          </form>
         </div>
 
-        <!-- AI Study Assistant Card -->
+        <!-- Spaced Repetition Queue / Weak Spots -->
         <div class="card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
-                AI WAEC Study Tutor
-            </div>
-            <div id="chat-history">
-                <div class="chat-msg ai">Ask me anything about your subjects!</div>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="ai-input" placeholder="Ask a question...">
-                <button class="btn-primary" onclick="askAI()" style="width: auto; padding: 10px 18px;">Ask</button>
-            </div>
+          <div class="card-title">
+            <i class="fa-solid fa-bullseye"></i>
+            <span>Weak-Spot Revision Queue</span>
+          </div>
+          <div id="weakSpotsContainer">
+            <p style="font-size: 0.85rem; color: var(--text-muted);">No weak spots flagged yet! Great job.</p>
+          </div>
         </div>
+      </div>
+
+      <!-- Right Column: Badges & AI Tutor -->
+      <div>
+        <!-- Badges Hub -->
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-trophy"></i>
+            <span>Badges & Achievements</span>
+          </div>
+          <div class="badges-grid" id="badgesContainer"></div>
+        </div>
+
+        <!-- AI Tutor Companion -->
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-robot"></i>
+            <span>BECE/WAEC AI Tutor</span>
+          </div>
+          <div class="chat-box" id="chatBox">
+            <div class="chat-msg ai">Hello Jason! I'm your WAEC AI Tutor. Ask me any study question or ask for practice past-questions!</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="aiQueryInput" class="form-control" placeholder="Ask a question..." onkeypress="if(event.key==='Enter') sendAIQuery()">
+            <button class="btn btn-primary" style="width: auto;" onclick="sendAIQuery()"><i class="fa-solid fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- MOM'S PORTAL VIEW -->
-    <div id="mom-view" style="display: none;">
-        
-        <!-- Active Timer Card (Mom's Side) -->
-        <div class="card" id="mom-timer-card" style="display: none; border-color: var(--accent-orange); background: rgba(249, 115, 22, 0.05);">
-            <div class="card-title" style="color: var(--accent-orange); justify-content: center;">
-                <svg viewBox="0 0 24 24" style="stroke: currentColor;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Jason's Active Break
-            </div>
-            <div class="card-desc" style="text-align: center;">Monitoring active reward time.</div>
-            <div style="font-size: 36px; font-weight: 800; text-align: center; margin: 10px 0; color: var(--accent-orange);" id="mom-timer-display">
-                00:00
-            </div>
-            <div style="text-align: center; font-size: 12px; color: var(--text-sub); font-weight: 700; text-transform: uppercase;" id="mom-timer-title">
-                Activity Name
-            </div>
-            <button class="btn-sec" style="width: 100%; margin-top: 14px; border-color: var(--accent-red); color: var(--accent-red);" onclick="clearTimer()">End Timer Early</button>
-        </div>
-
-        <div class="card" style="border-color: rgba(16, 185, 129, 0.4);">
-            <div class="card-title" style="color: #34d399;">
-                <svg viewBox="0 0 24 24" style="stroke: #34d399;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Parent Verification Dashboard
-            </div>
-            <div class="card-desc">Inspect your child's written bullet points or rough note sheet, then tap approve to update their streak and credit reward minutes!</div>
-
-            <div class="quick-tick-box">
-                <div>
-                    <div style="font-size: 13px; font-weight: 800;">Quick Tick "Yes" For Today</div>
-                    <div style="font-size: 11px; opacity: 0.85;">Instantly add +1 Day Streak & +45 Mins</div>
-                </div>
-                <button class="btn-quick-tick" onclick="quickTickYes()">+1 Streak</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Awaiting Mom's Verification
-            </div>
-            <div id="pending-list">
-                <p style="font-size: 12px; color: var(--text-sub); text-align: center; padding: 10px;">No pending tasks waiting for review.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Submissions Log -->
-    <div class="card">
+    <!-- MOM'S REVIEW PORTAL VIEW (Initially Hidden) -->
+    <div id="momView" class="hidden">
+      <div class="card">
         <div class="card-title">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            My Recent Study Submissions
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span>Pending Study Proofs for Review</span>
         </div>
-        <div id="submissions-list"></div>
+        <div id="pendingProofsList">
+          <p style="color: var(--text-muted); font-size: 0.9rem;">No pending proofs to review right now!</p>
+        </div>
+      </div>
     </div>
 
-    <!-- PIN Modal -->
-    <div class="modal" id="pin-modal">
-        <div class="modal-content">
-            <div class="modal-title">Mom's Verification Code</div>
-            <div class="modal-desc">Enter PIN to access Mom's Portal (Default PIN: 1234)</div>
-            <input type="password" id="pin-input" placeholder="••••" maxlength="4" style="text-align: center; font-size: 22px; letter-spacing: 8px; margin-bottom: 12px;">
-            <div class="modal-btns">
-                <button class="btn-sec" onclick="closeModal()">Cancel</button>
-                <button class="btn-primary" style="flex: 1;" onclick="verifyPin()">Enter Portal</button>
-            </div>
+  </main>
+
+  <!-- MODAL: Post-Study Micro-Survey -->
+  <div class="modal-overlay" id="surveyModal">
+    <div class="modal-card">
+      <div class="card-title"><i class="fa-solid fa-chart-line"></i> Post-Study Reflection</div>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+        Rate your understanding to claim your session XP and calculate break minutes!
+      </p>
+
+      <form onsubmit="handleSurveySubmit(event)">
+        <div class="form-group">
+          <label>How well do you understand this topic?</label>
+          <div class="star-rating">
+            <input type="radio" id="star5" name="rating" value="5" required/><label for="star5">★</label>
+            <input type="radio" id="star4" name="rating" value="4" /><label for="star4">★</label>
+            <input type="radio" id="star3" name="rating" value="3" /><label for="star3">★</label>
+            <input type="radio" id="star2" name="rating" value="2" /><label for="star2">★</label>
+            <input type="radio" id="star1" name="rating" value="1" /><label for="star1">★</label>
+          </div>
         </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="flagWeakSpot"> Flag this topic for AI revision before exams
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-coins"></i> Claim XP & Break Minutes</button>
+      </form>
     </div>
+  </div>
 
-    <script>
-        const firebaseConfig = {
-            databaseURL: "https://waec-tracker-d0575-default-rtdb.firebaseio.com/"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+  <!-- MODAL: Reward Redemption -->
+  <div class="modal-overlay" id="redemptionModal">
+    <div class="modal-card">
+      <div class="card-title"><i class="fa-solid fa-gamepad"></i> Redeem Break Minutes</div>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;">Select an activity to spend your earned break minutes on.</p>
 
-        let data = {
-            streak: 0, proofs: 0, bank: 90, pending: 0, items: [],
-            weekHistory: [false, false, false, false, false, false, false],
-            activeTimer: null
-        };
+      <div class="form-group">
+        <label>Activity</label>
+        <select id="rewardActivity" class="form-control">
+          <option value="Minecraft / Gaming">Minecraft / Gaming</option>
+          <option value="Art & Sketching">Art & Sketching</option>
+          <option value="YouTube / Music">YouTube / Music</option>
+        </select>
+      </div>
 
-        db.ref('trackerData').on('value', (snapshot) => {
-            const serverData = snapshot.val();
-            if (serverData) {
-                data = serverData;
-                if(!data.items) data.items = [];
-                if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
-            }
-            updateUI();
-            updateTimerUI(); // Instantly check timer when data loads
-        });
+      <div class="form-group">
+        <label>Duration (Minutes)</label>
+        <input type="number" id="redeemMinutesInput" class="form-control" value="15" min="5" max="60">
+      </div>
 
-        function saveDataToCloud() {
-            db.ref('trackerData').set(data);
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="startBreakTimer()"><i class="fa-solid fa-play"></i> Start Break Timer</button>
+        <button class="btn btn-secondary" onclick="closeRedemptionModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript App Logic -->
+  <script>
+    // ==========================================
+    // APP STATE MANAGEMENT
+    // ==========================================
+    let userState = {
+      xp: 350,
+      streakDays: 3,
+      rewardMinutes: 30,
+      unlockedBadges: ['first_proof', 'streak_3'],
+      weakSpots: [],
+      pendingProofs: []
+    };
+
+    const GAMIFICATION_CONFIG = {
+      levels: [
+        { level: 1, name: "Novice Scholar", minXp: 0 },
+        { level: 2, name: "BECE Apprentice", minXp: 300 },
+        { level: 3, name: "Focus Knight", minXp: 800 },
+        { level: 4, name: "Syllabus Crusader", minXp: 1800 },
+        { level: 5, name: "WAEC Mastermind", minXp: 3500 }
+      ],
+      badges: [
+        { id: "first_proof", name: "Proof Positive", desc: "Submit your first study proof", icon: "fa-solid fa-camera" },
+        { id: "streak_3", name: "On Fire", desc: "Maintain a 3-day study streak", icon: "fa-solid fa-fire" },
+        { id: "streak_7", name: "Unstoppable", desc: "Maintain a 7-day study streak", icon: "fa-solid fa-bolt" },
+        { id: "survey_pro", name: "Self-Reflector", desc: "Complete post-study reflections", icon: "fa-solid fa-chart-pie" }
+      ]
+    };
+
+    let studyTimerInterval = null;
+    let studyTimeRemaining = 25 * 60; // 25 mins
+    let isStudyTimerRunning = false;
+    let lastCompletedSession = null;
+
+    // ==========================================
+    // INIT APP
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", () => {
+      renderHeaderStats();
+      renderBadges();
+      renderWeakSpots();
+    });
+
+    // ==========================================
+    // GAMIFICATION ENGINE
+    // ==========================================
+    function renderHeaderStats() {
+      // Calculate level
+      let currentLevel = GAMIFICATION_CONFIG.levels[0];
+      let nextLevel = GAMIFICATION_CONFIG.levels[1];
+
+      for (let i = 0; i < GAMIFICATION_CONFIG.levels.length; i++) {
+        if (userState.xp >= GAMIFICATION_CONFIG.levels[i].minXp) {
+          currentLevel = GAMIFICATION_CONFIG.levels[i];
+          nextLevel = GAMIFICATION_CONFIG.levels[i + 1] || null;
         }
+      }
 
-        function switchMode(mode) {
-            if(mode === 'student') {
-                document.getElementById('student-view').style.display = 'block';
-                document.getElementById('mom-view').style.display = 'none';
-                document.getElementById('btn-student-mode').classList.add('active');
-                document.getElementById('btn-mom-mode').classList.remove('active');
-            } else {
-                document.getElementById('student-view').style.display = 'none';
-                document.getElementById('mom-view').style.display = 'block';
-                document.getElementById('btn-student-mode').classList.remove('active');
-                document.getElementById('btn-mom-mode').classList.add('active');
-            }
-        }
+      const xpInLevel = userState.xp - currentLevel.minXp;
+      const xpReq = nextLevel ? (nextLevel.minXp - currentLevel.minXp) : 1;
+      const pct = nextLevel ? Math.min(100, Math.floor((xpInLevel / xpReq) * 100)) : 100;
 
-        function openMomAuth() {
-            document.getElementById('pin-modal').style.display = 'flex';
-            document.getElementById('pin-input').focus();
-        }
+      document.getElementById("levelName").innerText = `Lvl ${currentLevel.level} ${currentLevel.name}`;
+      document.getElementById("xpDisplay").innerText = `${userState.xp} XP`;
+      document.getElementById("xpProgressBar").style.width = `${pct}%`;
+      document.getElementById("streakDaysDisplay").innerText = `${userState.streakDays} Day Streak`;
+      document.getElementById("rewardBankDisplay").innerText = `${userState.rewardMinutes} Mins Available`;
+    }
 
-        function closeModal() {
-            document.getElementById('pin-modal').style.display = 'none';
-        }
+    function addXP(amount) {
+      userState.xp += amount;
+      renderHeaderStats();
+    }
 
-        function verifyPin() {
-            const pin = document.getElementById('pin-input').value;
-            if(pin === '1234') {
-                closeModal();
-                document.getElementById('pin-input').value = '';
-                switchMode('mom');
-            } else {
-                alert('Incorrect PIN! Try 1234');
-            }
-        }
+    function renderBadges() {
+      const container = document.getElementById("badgesContainer");
+      const unlockedSet = new Set(userState.unlockedBadges);
 
-        function submitStudyProof() {
-            const subject = document.getElementById('sub-subject').value;
-            const proof = document.getElementById('sub-proof-type').value;
-            const notes = document.getElementById('sub-notes').value;
+      container.innerHTML = GAMIFICATION_CONFIG.badges.map(b => `
+        <div class="badge-item ${unlockedSet.has(b.id) ? 'unlocked' : 'locked'}" title="${b.desc}">
+          <span class="badge-icon"><i class="${b.icon}"></i></span>
+          <span class="badge-name">${b.name}</span>
+        </div>
+      `).join('');
+    }
 
-            if(!notes.trim()) {
-                alert('Please enter what you learned in step 3!');
-                return;
-            }
+    // ==========================================
+    // TIMER LOGIC & BREAK EARN CALCULATOR
+    // ==========================================
+    function toggleStudyTimer() {
+      const btn = document.getElementById("startStudyBtn");
+      if (isStudyTimerRunning) {
+        clearInterval(studyTimerInterval);
+        isStudyTimerRunning = false;
+        btn.innerHTML = `<i class="fa-solid fa-play"></i> Resume Session`;
+      } else {
+        isStudyTimerRunning = true;
+        btn.innerHTML = `<i class="fa-solid fa-pause"></i> Pause Session`;
+        studyTimerInterval = setInterval(() => {
+          if (studyTimeRemaining > 0) {
+            studyTimeRemaining--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(studyTimerInterval);
+            isStudyTimerRunning = false;
+            btn.innerHTML = `<i class="fa-solid fa-play"></i> Start Session`;
+            finishStudySession();
+          }
+        }, 1000);
+      }
+    }
 
-            data.pending++;
-            if(!data.items) data.items = [];
-            data.items.unshift({
-                id: Date.now(), subject: subject, proof: proof, notes: notes, status: 'pending'
-            });
+    function updateTimerDisplay() {
+      const mins = Math.floor(studyTimeRemaining / 60);
+      const secs = studyTimeRemaining % 60;
+      document.getElementById("studyTimerDisplay").innerText = 
+        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
 
-            document.getElementById('sub-notes').value = '';
-            saveDataToCloud();
-            alert("Proof submitted! Mom will see it on her review portal instantly.");
-        }
+    function resetStudyTimer() {
+      clearInterval(studyTimerInterval);
+      isStudyTimerRunning = false;
+      studyTimeRemaining = 25 * 60;
+      updateTimerDisplay();
+      document.getElementById("startStudyBtn").innerHTML = `<i class="fa-solid fa-play"></i> Start Session`;
+    }
 
-        function approveSubmission(id) {
-            if(!data.items) return;
-            const item = data.items.find(i => i.id === id);
-            if(item && item.status === 'pending') {
-                item.status = 'approved';
-                data.pending = Math.max(0, data.pending - 1);
-                data.streak++; data.proofs++; data.bank += 45;
-                
-                const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
-                if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
-                data.weekHistory[dayIndex] = true;
+    function finishStudySession() {
+      const difficulty = document.getElementById("topicDifficulty").value;
+      const subject = document.getElementById("studySubject").value;
 
-                saveDataToCloud();
-            }
-        }
+      // Break duration multiplier calculation
+      let breakMultiplier = 0.20; // 20%
+      if (difficulty === "Hard") breakMultiplier = 0.30;
+      if (difficulty === "Easy") breakMultiplier = 0.15;
 
-        function rejectSubmission(id) {
-            if(!data.items) return;
-            const item = data.items.find(i => i.id === id);
-            if(item && item.status === 'pending') {
-                item.status = 'rejected';
-                data.pending = Math.max(0, data.pending - 1);
-                saveDataToCloud();
-            }
-        }
+      const earnedMins = Math.max(3, Math.round(25 * breakMultiplier));
 
-        function quickTickYes() {
-            data.streak++; data.proofs++; data.bank += 45;
-            
-            const dayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
-            if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
-            data.weekHistory[dayIndex] = true;
+      lastCompletedSession = { subject, duration: 25, difficulty, earnedMins };
+      
+      // Open reflection modal
+      document.getElementById("surveyModal").classList.add("active");
+    }
 
-            saveDataToCloud();
-            alert("Updated! Streak is now " + data.streak + " Days, +45 Mins added to Reward Bank.");
-        }
+    // ==========================================
+    // SURVEY & PROOF SUBMISSION
+    // ==========================================
+    function handleSurveySubmit(e) {
+      e.preventDefault();
+      const rating = document.querySelector('input[name="rating"]:checked').value;
+      const flagWeak = document.getElementById("flagWeakSpot").checked;
 
-        // TIMER LOGIC ADDED HERE
-        function redeemTime(mins, title) {
-            if(data.bank < mins) {
-                alert("Not enough reward minutes in your bank!");
-                return;
-            }
-            if(data.activeTimer && data.activeTimer.endTime > Date.now()) {
-                alert("You already have a break timer running!");
-                return;
-            }
-            
-            data.bank -= mins;
-            // Set the end time in milliseconds from now
-            data.activeTimer = {
-                endTime: Date.now() + (mins * 60 * 1000),
-                title: title
-            };
-            
-            saveDataToCloud();
-            alert(`Enjoy your ${mins} mins of ${title}! Timer started and synced with Mom.`);
-        }
+      // Calculate XP
+      const xpEarned = 100 + (parseInt(rating) * 10);
+      addXP(xpEarned);
 
-        function clearTimer() {
-            data.activeTimer = null;
-            saveDataToCloud();
-        }
+      // Add earned minutes to bank
+      if (lastCompletedSession) {
+        userState.rewardMinutes += lastCompletedSession.earnedMins;
+      }
 
-        // Run this every second to update the clocks
-        setInterval(updateTimerUI, 1000);
+      // Flag weak spot if rated low or box checked
+      if (parseInt(rating) <= 2 || flagWeak) {
+        const topicName = lastCompletedSession ? lastCompletedSession.subject : "Recent Topic";
+        userState.weakSpots.push({ subject: topicName, rating });
+        renderWeakSpots();
+      }
 
-        function updateTimerUI() {
-            const momTimerCard = document.getElementById('mom-timer-card');
-            const studentTimerCard = document.getElementById('student-timer-card');
+      // Unlock Survey Badge
+      if (!userState.unlockedBadges.includes("survey_pro")) {
+        userState.unlockedBadges.push("survey_pro");
+        renderBadges();
+      }
 
-            if (!data.activeTimer || data.activeTimer.endTime <= Date.now()) {
-                if(momTimerCard) momTimerCard.style.display = 'none';
-                if(studentTimerCard) studentTimerCard.style.display = 'none';
-                return;
-            }
+      renderHeaderStats();
+      document.getElementById("surveyModal").classList.remove("active");
+      resetStudyTimer();
+      alert(`Session Completed! You earned +${xpEarned} XP and +${lastCompletedSession ? lastCompletedSession.earnedMins : 5} Break Minutes!`);
+    }
 
-            const timeLeft = data.activeTimer.endTime - Date.now();
-            const minutes = Math.floor(timeLeft / 60000);
-            const seconds = Math.floor((timeLeft % 60000) / 1000);
-            const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    function handleProofSubmission(e) {
+      e.preventDefault();
+      const topic = document.getElementById("proofTopic").value;
+      const summary = document.getElementById("proofSummary").value;
 
-            if(momTimerCard) {
-                momTimerCard.style.display = 'block';
-                document.getElementById('mom-timer-display').innerText = timeString;
-                document.getElementById('mom-timer-title').innerText = data.activeTimer.title;
-            }
+      userState.pendingProofs.push({
+        id: Date.now(),
+        topic,
+        summary,
+        timestamp: new Date().toLocaleTimeString()
+      });
 
-            if(studentTimerCard) {
-                studentTimerCard.style.display = 'block';
-                document.getElementById('student-timer-display').innerText = timeString;
-                document.getElementById('student-timer-title').innerText = data.activeTimer.title;
-            }
-        }
+      document.getElementById("proofForm").reset();
+      renderPendingProofs();
+      alert("Proof submitted to Mom's Portal for verification!");
+    }
 
-        function updateUI() {
-            document.getElementById('stat-streak').innerText = data.streak || 0;
-            document.getElementById('stat-proofs').innerText = data.proofs || 0;
-            document.getElementById('stat-bank').innerText = data.bank || 0;
-            document.getElementById('stat-pending').innerText = data.pending || 0;
+    function renderWeakSpots() {
+      const container = document.getElementById("weakSpotsContainer");
+      if (userState.weakSpots.length === 0) {
+        container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted);">No weak spots flagged yet! Great job.</p>`;
+        return;
+      }
 
-            const daysNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const weekContainer = document.getElementById('weekly-overview-grid');
-            if(weekContainer) {
-                const history = data.weekHistory || [false, false, false, false, false, false, false];
-                weekContainer.innerHTML = daysNames.map((day, idx) => {
-                    const isDone = history[idx];
-                    return `
-                        <div class="week-day">
-                            <div class="week-day-name">${day}</div>
-                            <div class="week-day-status ${isDone ? 'status-done' : 'status-missed'}">${isDone ? '✓' : '•'}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
+      container.innerHTML = userState.weakSpots.map((spot, index) => `
+        <div class="weak-spot-card">
+          <div>
+            <strong>${spot.subject}</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Self Rating: ${spot.rating}/5 Stars</div>
+          </div>
+          <button class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" onclick="promptAITutorWeakSpot('${spot.subject}')">
+            Practice AI Quiz
+          </button>
+        </div>
+      `).join('');
+    }
 
-            const subList = document.getElementById('submissions-list');
-            if(!data.items || data.items.length === 0) {
-                subList.innerHTML = `<p style="font-size: 12px; color: var(--text-sub); text-align: center; padding: 10px;">No study submissions yet. Complete a study target above!</p>`;
-            } else {
-                subList.innerHTML = data.items.map(item => {
-                    let tagClass = 'tag-pending';
-                    let tagText = '⌛ Awaiting Approval';
-                    if(item.status === 'approved') {
-                        tagClass = 'tag-approved'; tagText = '✓ Verified (+45 Mins)';
-                    } else if(item.status === 'rejected') {
-                        tagClass = 'tag-rejected'; tagText = '✕ Needs Revision';
-                    }
+    // ==========================================
+    // MOM'S PORTAL LOGIC
+    // ==========================================
+    function toggleView() {
+      const studentView = document.getElementById("studentView");
+      const momView = document.getElementById("momView");
+      const btn = document.getElementById("viewToggleBtn");
 
-                    return `
-                        <div class="submission-item">
-                            <div class="sub-header">
-                                <span class="sub-subject">${item.subject} - ${item.proof}</span>
-                                <span class="sub-tag ${tagClass}">${tagText}</span>
-                            </div>
-                            <div class="sub-notes">${item.notes}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
+      if (studentView.classList.contains("hidden")) {
+        studentView.classList.remove("hidden");
+        momView.classList.add("hidden");
+        btn.innerHTML = `<i class="fa-solid fa-user-shield"></i> Switch to Mom's Portal`;
+      } else {
+        studentView.classList.add("hidden");
+        momView.classList.remove("hidden");
+        btn.innerHTML = `<i class="fa-solid fa-user-graduate"></i> Switch to Student View`;
+        renderPendingProofs();
+      }
+    }
 
-            const pendingList = document.getElementById('pending-list');
-            const pendingItems = (data.items || []).filter(i => i.status === 'pending');
-            if(pendingItems.length === 0) {
-                pendingList.innerHTML = `<p style="font-size: 12px; color: var(--text-sub); text-align: center; padding: 10px;">No pending tasks waiting for review. Excellent job!</p>`;
-            } else {
-                pendingList.innerHTML = pendingItems.map(item => `
-                    <div class="submission-item" style="border-color: rgba(245, 158, 11, 0.4);">
-                        <div class="sub-header">
-                            <span class="sub-subject">${item.subject} (${item.proof})</span>
-                        </div>
-                        <div class="sub-notes" style="margin-bottom: 10px;">${item.notes}</div>
-                        <div class="review-actions">
-                            <button class="btn-approve" onclick="approveSubmission(${item.id})">Approve</button>
-                            <button class="btn-reject" onclick="rejectSubmission(${item.id})">Reject</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
+    function renderPendingProofs() {
+      const list = document.getElementById("pendingProofsList");
+      if (userState.pendingProofs.length === 0) {
+        list.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">No pending proofs to review right now!</p>`;
+        return;
+      }
 
-        async function askAI() {
-            const inputEl = document.getElementById('ai-input');
-            const chatHistory = document.getElementById('chat-history');
-            const userQuery = inputEl.value.trim();
+      list.innerHTML = userState.pendingProofs.map(p => `
+        <div style="border: 1px solid var(--border-color); padding: 16px; border-radius: 12px; margin-bottom: 12px; background: white;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <strong>Topic: ${p.topic}</strong>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">${p.timestamp}</span>
+          </div>
+          <p style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-main);">${p.summary}</p>
+          <div class="btn-group" style="justify-content: flex-start; gap: 12px;">
+            <button class="btn btn-success" style="width: auto; padding: 8px 16px;" onclick="approveProof(${p.id})">
+              <i class="fa-solid fa-check"></i> Approve (+10 Bonus Mins)
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
 
-            if (!userQuery) return;
+    function approveProof(id) {
+      userState.pendingProofs = userState.pendingProofs.filter(p => p.id !== id);
+      userState.rewardMinutes += 10;
+      addXP(50);
+      renderPendingProofs();
+      renderHeaderStats();
+      alert("Approved! 10 bonus reward minutes added to student bank.");
+    }
 
-            const userMsg = document.createElement('div');
-            userMsg.className = 'chat-msg user';
-            userMsg.innerText = userQuery;
-            chatHistory.appendChild(userMsg);
-            
-            inputEl.value = '';
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+    // ==========================================
+    // AI TUTOR COMPANION LOGIC
+    // ==========================================
+    function sendAIQuery() {
+      const input = document.getElementById("aiQueryInput");
+      const text = input.value.trim();
+      if (!text) return;
 
-            const loadingMsg = document.createElement('div');
-            loadingMsg.className = 'chat-msg ai';
-            loadingMsg.innerHTML = '<em>AI is thinking...</em>';
-            chatHistory.appendChild(loadingMsg);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+      appendChatMessage(text, 'user');
+      input.value = '';
 
-            // =========================================================
-            // ACTION REQUIRED: REPLACE WITH YOUR REAL GEMINI API KEY!
-            // GET ONE AT: aistudio.google.com
-            // =========================================================
-            const API_KEY = "PUT_YOUR_API_KEY_HERE"; 
-            
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+      // AI Response Simulation
+      setTimeout(() => {
+        const response = `Here is a quick WAEC revision tip for "${text}": Always ensure you state formula steps clearly to earn full method marks! Would you like 2 practice past questions on this?`;
+        appendChatMessage(response, 'ai');
+      }, 800);
+    }
 
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: `You are an expert tutor helping a secondary school student prepare for WAEC/BECE exams. Keep answers concise, clear, and easy to understand.\n\nStudent Question: ${userQuery}`
-                            }]
-                        }]
-                    })
-                });
+    function promptAITutorWeakSpot(subject) {
+      const query = `Generate 2 BECE/WAEC practice questions for ${subject} with step-by-step explanations.`;
+      appendChatMessage(query, 'user');
+      setTimeout(() => {
+        appendChatMessage(`Here are your practice questions for ${subject}:\n1. Calculate the value of x when 2x + 5 = 15.\nAnswer: x = 5.`, 'ai');
+      }, 800);
+    }
 
-                const resData = await response.json();
-                if(resData.candidates && resData.candidates[0]?.content?.parts[0]?.text) {
-                    loadingMsg.innerText = resData.candidates[0].content.parts[0].text;
-                } else if(resData.error) {
-                    loadingMsg.innerHTML = `<span style="color: var(--accent-red);">API Error: ${resData.error.message}</span>`;
-                } else {
-                    loadingMsg.innerText = "Sorry, I couldn't process that question right now.";
-                }
-            } catch (error) {
-                loadingMsg.innerHTML = `<span style="color: var(--accent-red);">Network Error. Check your connection.</span>`;
-            }
-            
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-    </script>
+    function appendChatMessage(msg, sender) {
+      const box = document.getElementById("chatBox");
+      const div = document.createElement("div");
+      div.className = `chat-msg ${sender}`;
+      div.innerText = msg;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ==========================================
+    // MODAL CONTROLS
+    // ==========================================
+    function openRedemptionModal() {
+      document.getElementById("redemptionModal").classList.add("active");
+    }
+
+    function closeRedemptionModal() {
+      document.getElementById("redemptionModal").classList.remove("active");
+    }
+
+    function startBreakTimer() {
+      const mins = parseInt(document.getElementById("redeemMinutesInput").value);
+      if (mins > userState.rewardMinutes) {
+        alert("Not enough earned minutes in bank!");
+        return;
+      }
+
+      userState.rewardMinutes -= mins;
+      renderHeaderStats();
+      closeRedemptionModal();
+      alert(`Break timer started for ${mins} minutes of ${document.getElementById("rewardActivity").value}! Enjoy your break.`);
+    }
+  </script>
 </body>
 </html>
